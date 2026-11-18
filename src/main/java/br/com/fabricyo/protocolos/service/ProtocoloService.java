@@ -1,0 +1,61 @@
+package br.com.fabricyo.protocolos.service;
+
+import br.com.fabricyo.protocolos.domain.Protocolo;
+import br.com.fabricyo.protocolos.dto.CriarProtocoloRequest;
+import br.com.fabricyo.protocolos.dto.ProtocoloResponse;
+import br.com.fabricyo.protocolos.repository.ProtocoloRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class ProtocoloService {
+
+    private final ProtocoloRepository repository;
+
+    public ProtocoloService(ProtocoloRepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional
+    public ProtocoloResponse criar(CriarProtocoloRequest request) {
+        String numero = gerarNumero();
+
+        Protocolo protocolo = new Protocolo(
+                numero,
+                request.assunto(),
+                request.descricao(),
+                request.solicitante()
+        );
+
+        Protocolo salvo = repository.save(protocolo);
+        return ProtocoloResponse.de(salvo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProtocoloResponse> listar() {
+        return repository.findAll()
+                .stream()
+                .map(ProtocoloResponse::de)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ProtocoloResponse buscarPorId(UUID id) {
+        Protocolo protocolo = repository.findById(id)
+                .orElseThrow(() -> new ProtocoloNaoEncontradoException(
+                        "Protocolo não encontrado: " + id));
+        return ProtocoloResponse.de(protocolo);
+    }
+
+    // Monta o número visível no formato AAAA/NNNNNN, por exemplo 2026/000123.
+    // O sequencial vem do banco (nextval), garantindo unicidade sob concorrência.
+    private String gerarNumero() {
+        long sequencial = repository.proximoNumeroSequencial();
+        int ano = LocalDate.now().getYear();
+        return String.format("%d/%06d", ano, sequencial);
+    }
+}
