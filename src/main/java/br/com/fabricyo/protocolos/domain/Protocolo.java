@@ -54,6 +54,41 @@ public class Protocolo {
         this.abertura = LocalDateTime.now();
     }
 
+    // Inicia o atendimento: só é permitido a partir de um protocolo ABERTO.
+    public void iniciarAtendimento() {
+        if (status != Status.ABERTO) {
+            throw new TransicaoInvalidaException(
+                    "Só é possível iniciar o atendimento de um protocolo ABERTO. Status atual: " + status);
+        }
+        this.status = Status.EM_ANDAMENTO;
+    }
+
+    // Conclui o protocolo e registra o encerramento.
+    // Estados finais (CONCLUIDO, CANCELADO) não podem ser concluídos.
+    public void concluir() {
+        if (estaEncerrado()) {
+            throw new TransicaoInvalidaException(
+                    "Um protocolo " + status + " não pode ser concluído.");
+        }
+        this.status = Status.CONCLUIDO;
+        this.encerramento = LocalDateTime.now();
+    }
+
+    // Cancela o protocolo e registra o encerramento.
+    // Estados finais (CONCLUIDO, CANCELADO) não podem ser cancelados.
+    public void cancelar() {
+        if (estaEncerrado()) {
+            throw new TransicaoInvalidaException(
+                    "Um protocolo " + status + " não pode ser cancelado.");
+        }
+        this.status = Status.CANCELADO;
+        this.encerramento = LocalDateTime.now();
+    }
+
+    private boolean estaEncerrado() {
+        return status == Status.CONCLUIDO || status == Status.CANCELADO;
+    }
+
     public UUID getId() {
         return id;
     }
