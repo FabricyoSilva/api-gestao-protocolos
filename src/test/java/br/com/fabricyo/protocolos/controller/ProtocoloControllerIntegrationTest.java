@@ -1,7 +1,9 @@
 package br.com.fabricyo.protocolos.controller;
 
 import br.com.fabricyo.protocolos.TestcontainersConfiguration;
+import br.com.fabricyo.protocolos.repository.ProtocoloRepository;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -10,6 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,9 +28,18 @@ class ProtocoloControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ProtocoloRepository repository;
+
     private static final String BODY_VALIDO = """
             {"assunto":"Falta de iluminacao","descricao":"Postes apagados","solicitante":"Maria"}
             """;
+
+    @BeforeEach
+    void limparBase() {
+        // Isola cada teste: contagens e filtros ficam determinísticos.
+        repository.deleteAll();
+    }
 
     @Test
     void criaProtocoloComNumeroGeradoEStatusAberto() throws Exception {
@@ -98,10 +110,74 @@ class ProtocoloControllerIntegrationTest {
                 .andExpect(jsonPath("$.encerramento").isNotEmpty());
     }
 
+    @Test
+    void listagemRetornaEstruturaPaginada() throws Exception {
+        criarEObterId();
+        criarEObterId();
+        criarEObterId();
+
+        mockMvc.perform(get("/protocolos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conteudo", hasSize(3)))
+                .andExpect(jsonPath("$.pagina").value(0))
+                .andExpect(jsonPath("$.totalElementos").value(3))
+                .andExpect(jsonPath("$.totalPaginas").value(1))
+                .andExpect(jsonPath("$.ultima").value(true));
+    }
+
+    @Test
+    void filtraPorStatus() throws Exception {
+        criarEObterId(); // fica ABERTO
+        String idConcluir = criarEObterId();
+        mockMvc.perform(post("/protocolos/{id}/concluir", idConcluir)).andExpect(status().isOk());
+
+        mockMvc.perform(get("/protocolos").param("status", "CONCLUIDO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElementos").value(1))
+                .andExpect(jsonPath("$.conteudo[0].status").value("CONCLUIDO"));
+    }
+
+    @Test
+    void filtraPorSolicitanteParcialIgnorandoMaiusculas() throws Exception {
+        criarComSolicitante("Assunto A", "Maria Oliveira");
+        criarComSolicitante("Assunto B", "Joao Pereira");
+
+        mockMvc.perform(get("/protocolos").param("solicitante", "maria"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElementos").value(1))
+                .andExpect(jsonPath("$.conteudo[0].solicitante").value("Maria Oliveira"));
+    }
+
+    @Test
+    void paginacaoRespeitaOTamanhoDaPagina() throws Exception {
+        criarEObterId();
+        criarEObterId();
+        criarEObterId();
+
+        mockMvc.perform(get("/protocolos").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conteudo", hasSize(2)))
+                .andExpect(jsonPath("$.tamanho").value(2))
+                .andExpect(jsonPath("$.totalElementos").value(3))
+                .andExpect(jsonPath("$.totalPaginas").value(2))
+                .andExpect(jsonPath("$.ultima").value(false));
+    }
+
     private String criarEObterId() throws Exception {
+        return criar(BODY_VALIDO);
+    }
+
+    private String criarComSolicitante(String assunto, String solicitante) throws Exception {
+        String corpo = """
+                {"assunto":"%s","solicitante":"%s"}
+                """.formatted(assunto, solicitante);
+        return criar(corpo);
+    }
+
+    private String criar(String corpo) throws Exception {
         String resposta = mockMvc.perform(post("/protocolos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(BODY_VALIDO))
+                        .content(corpo))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
