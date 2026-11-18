@@ -54,4 +54,19 @@ public class ProtocoloController {
     public ProtocoloResponse buscarPorId(@PathVariable UUID id) {
         return service.buscarPorId(id);
     }
+
+    @PostMapping("/{id}/iniciar")
+    public ProtocoloResponse iniciar(@PathVariable UUID id) {
+        return service.iniciarAtendimento(id);
+    }
+
+    @PostMapping("/{id}/concluir")
+    public ProtocoloResponse concluir(@PathVariable UUID id) {
+        return service.concluir(id);
+    }
+
+    @PostMapping("/{id}/cancelar")
+    public ProtocoloResponse cancelar(@PathVariable UUID id) {
+        return service.cancelar(id);
+    }
 }

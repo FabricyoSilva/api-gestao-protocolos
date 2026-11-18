@@ -1,5 +1,6 @@
 package br.com.fabricyo.protocolos.controller.erro;
 
+import br.com.fabricyo.protocolos.domain.TransicaoInvalidaException;
 import br.com.fabricyo.protocolos.service.ProtocoloNaoEncontradoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,17 @@ public class TratadorDeErros {
                 null
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(corpo);
+    }
+
+    // Transição de estado não permitida -> 409 Conflict.
+    @ExceptionHandler(TransicaoInvalidaException.class)
+    public ResponseEntity<ErroResponse> tratarTransicaoInvalida(TransicaoInvalidaException ex) {
+        ErroResponse corpo = new ErroResponse(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(corpo);
     }
 
     // Falha de validação do @Valid -> 400 Bad Request, listando cada campo inválido.
