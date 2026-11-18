@@ -45,10 +45,34 @@ public class ProtocoloService {
 
     @Transactional(readOnly = true)
     public ProtocoloResponse buscarPorId(UUID id) {
-        Protocolo protocolo = repository.findById(id)
+        return ProtocoloResponse.de(buscarEntidade(id));
+    }
+
+    @Transactional
+    public ProtocoloResponse iniciarAtendimento(UUID id) {
+        Protocolo protocolo = buscarEntidade(id);
+        protocolo.iniciarAtendimento();
+        return ProtocoloResponse.de(protocolo);
+    }
+
+    @Transactional
+    public ProtocoloResponse concluir(UUID id) {
+        Protocolo protocolo = buscarEntidade(id);
+        protocolo.concluir();
+        return ProtocoloResponse.de(protocolo);
+    }
+
+    @Transactional
+    public ProtocoloResponse cancelar(UUID id) {
+        Protocolo protocolo = buscarEntidade(id);
+        protocolo.cancelar();
+        return ProtocoloResponse.de(protocolo);
+    }
+
+    private Protocolo buscarEntidade(UUID id) {
+        return repository.findById(id)
                 .orElseThrow(() -> new ProtocoloNaoEncontradoException(
                         "Protocolo não encontrado: " + id));
-        return ProtocoloResponse.de(protocolo);
     }
 
     // Monta o número visível no formato AAAA/NNNNNN, por exemplo 2026/000123.
