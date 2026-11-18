@@ -7,6 +7,7 @@ import br.com.fabricyo.protocolos.dto.ProtocoloFiltro;
 import br.com.fabricyo.protocolos.dto.ProtocoloResponse;
 import br.com.fabricyo.protocolos.service.ProtocoloService;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -58,7 +59,7 @@ public class ProtocoloController {
             @RequestParam(required = false) String solicitante,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate aberturaDe,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate aberturaAte,
-            @PageableDefault(size = 20, sort = "abertura", direction = Sort.Direction.DESC) Pageable paginacao) {
+            @ParameterObject @PageableDefault(size = 20, sort = "abertura", direction = Sort.Direction.DESC) Pageable paginacao) {
 
         ProtocoloFiltro filtro = new ProtocoloFiltro(status, solicitante, aberturaDe, aberturaAte);
         return service.listar(filtro, paginacao);
