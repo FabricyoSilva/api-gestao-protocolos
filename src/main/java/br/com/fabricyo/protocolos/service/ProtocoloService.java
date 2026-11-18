@@ -2,13 +2,17 @@ package br.com.fabricyo.protocolos.service;
 
 import br.com.fabricyo.protocolos.domain.Protocolo;
 import br.com.fabricyo.protocolos.dto.CriarProtocoloRequest;
+import br.com.fabricyo.protocolos.dto.PaginaResponse;
+import br.com.fabricyo.protocolos.dto.ProtocoloFiltro;
 import br.com.fabricyo.protocolos.dto.ProtocoloResponse;
 import br.com.fabricyo.protocolos.repository.ProtocoloRepository;
+import br.com.fabricyo.protocolos.repository.ProtocoloSpecifications;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,11 +40,11 @@ public class ProtocoloService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProtocoloResponse> listar() {
-        return repository.findAll()
-                .stream()
-                .map(ProtocoloResponse::de)
-                .toList();
+    public PaginaResponse<ProtocoloResponse> listar(ProtocoloFiltro filtro, Pageable paginacao) {
+        Page<ProtocoloResponse> pagina = repository
+                .findAll(ProtocoloSpecifications.comFiltro(filtro), paginacao)
+                .map(ProtocoloResponse::de);
+        return PaginaResponse.de(pagina);
     }
 
     @Transactional(readOnly = true)

@@ -1,9 +1,16 @@
 package br.com.fabricyo.protocolos.controller;
 
+import br.com.fabricyo.protocolos.domain.Status;
 import br.com.fabricyo.protocolos.dto.CriarProtocoloRequest;
+import br.com.fabricyo.protocolos.dto.PaginaResponse;
+import br.com.fabricyo.protocolos.dto.ProtocoloFiltro;
 import br.com.fabricyo.protocolos.dto.ProtocoloResponse;
 import br.com.fabricyo.protocolos.service.ProtocoloService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,12 +18,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -45,8 +53,15 @@ public class ProtocoloController {
     }
 
     @GetMapping
-    public List<ProtocoloResponse> listar() {
-        return service.listar();
+    public PaginaResponse<ProtocoloResponse> listar(
+            @RequestParam(required = false) Status status,
+            @RequestParam(required = false) String solicitante,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate aberturaDe,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate aberturaAte,
+            @PageableDefault(size = 20, sort = "abertura", direction = Sort.Direction.DESC) Pageable paginacao) {
+
+        ProtocoloFiltro filtro = new ProtocoloFiltro(status, solicitante, aberturaDe, aberturaAte);
+        return service.listar(filtro, paginacao);
     }
 
     @GetMapping("/{id}")
